@@ -6,6 +6,7 @@ typedef struct {
 	packetBuffer sendPacketBuf;
 	packetBuffer rcvPacketBuf;	
 	switchQueue * head;
+	switchQueue * tail;
 	LinkInfo linkin[NUMHOSTS];
 	LinkInfo linkout[NUMHOSTS];
 	switchTable table;
@@ -25,3 +26,4 @@ typedef struct {
 void switchMain(switchState * sstate); //main loop for switch
 
 void switchInit(switchState * sstate);
+
