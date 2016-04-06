@@ -130,10 +130,45 @@ close(manLinkArray->link[hostid].toHost[PIPEWRITE]);
 void netSetNetworkTopology(linkArrayType * linkArray)
 {
 linkArray->link[0].uniPipeInfo.physIdSrc = 0;
-linkArray->link[0].uniPipeInfo.physIdDst = 1;
-linkArray->link[1].uniPipeInfo.physIdSrc = 1;
+linkArray->link[0].uniPipeInfo.physIdDst = 2;
+linkArray->link[1].uniPipeInfo.physIdSrc = 2;
 linkArray->link[1].uniPipeInfo.physIdDst = 0;
+linkArray->link[2].uniPipeInfo.physIdSrc = 1;
+linkArray->link[2].uniPipeInfo.physIdDst = 2;
+linkArray->link[3].uniPipeInfo.physIdSrc = 2;
+linkArray->link[3].uniPipeInfo.physIdDst = 1;
 }
+
+void netSwitchOutLink(linkArrayType * linkArray, int switchid, int * array)
+{
+   int i, j = 0;
+   int index;
+   
+   for(i = 0; i < linkArray->numlinks; i++) {
+      if(linkArray->link[i].uniPipeInfo.physIdSrc == switchid){
+         array[j] = i;
+         j++;
+      }
+   }
+   if (j == 0)
+      printf("Error: Can't find outgoing links for switch\n");
+}
+
+void netSwitchInLink(linkArrayType * linkArray, int switchid, int * array)
+{
+   int i, j = 0;
+   int index;
+   
+   for(i = 0; i < linkArray->numlinks; i++) {
+      if(linkArray->link[i].uniPipeInfo.physIdDst  == switchid){
+         array[j] = i;
+         j++;
+      }
+   }
+   if (j == 0)
+      printf("Error: Can't find incoming links for switch\n");
+}
+
 
 /*
  * Find host's outgoing link and return its index
@@ -172,7 +207,7 @@ for (i=0; i<linkArray->numlinks; i++) {
    if (linkArray->link[i].uniPipeInfo.physIdDst == hostid) index = i;
 }
 if (index == linkArray->numlinks) 
-   printf("Error:  Can't find outgoing link for host\n");
+   printf("Error:  Can't find incoming link for host\n");
 return index; 
 }
 

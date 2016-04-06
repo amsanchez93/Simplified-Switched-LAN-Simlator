@@ -25,4 +25,5 @@ utilities.o: utilities.c
 link.o:  link.c
 	gcc -c link.c
 
-
+clean:
+	rm -f *.o net367

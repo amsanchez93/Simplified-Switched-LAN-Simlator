@@ -1,7 +1,7 @@
 /* Definitions and prototypes for the link (link.c)
  */
 
-#define NUMLINKS 2
+#define NUMLINKS 4
 
 enum LinkType {UNIPIPE}; /* UNIPIPE = unidirectional pipe
                           * We can add more types later
@@ -13,7 +13,7 @@ typedef struct {
    enum UniPipeType pipeType;
    int         fd[2];
    int         physIdSrc;
-   int	       physIdDst;
+   int	      physIdDst;
 } UniPipeInfo;
 
 typedef struct {  /* Has all the information to implement a link */

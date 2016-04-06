@@ -3,15 +3,16 @@
 #define TABLE_LENGTH 100
 
 typedef struct {
+	int physid;
 	packetBuffer sendPacketBuf;
 	packetBuffer rcvPacketBuf;	
-	switchQueue * head;
-	switchQueue * tail;
+	//switchQueue * head;
+	//switchQueue * tail;
 	LinkInfo linkin[NUMHOSTS];
 	LinkInfo linkout[NUMHOSTS];
-	switchTable table;
+	//switchTable table;
 } switchState;
-
+/*
 typedef struct {
 	packetBuffer data;
 	switchQueue * next;
@@ -22,8 +23,8 @@ typedef struct {
 	int dstaddr[TABLE_LENGTH];
 	int outlink[TABLE_LENGTH];
 } switchTable;
-
+*/
 void switchMain(switchState * sstate); //main loop for switch
 
-void switchInit(switchState * sstate);
+void switchInit(switchState * sstate, int physid);
 

@@ -13,6 +13,7 @@
 #include "man.h"
 #include "host.h"
 #include "net.h"
+#include "switch.h"
 
 #define EMPTY_ADDR  0xffff  /* Indicates the empty address */
                              /* It also indicates that the broadcast address */
@@ -23,13 +24,14 @@
 void main()
 {
 hostState hstate;             /* The host's state */
+switchState sstate;           /* The switch's state */
 linkArrayType linkArray;
 manLinkArrayType manLinkArray;
 
 pid_t pid;  /* Process id */
 int physid; /* Physical ID of host */
-int i;
-int k;
+int i, j;
+int k, s[NUMHOSTS];
 
 /* 
  * Create nonblocking (pipes) between manager and hosts 
@@ -37,6 +39,8 @@ int k;
  */
 manLinkArray.numlinks = NUMHOSTS;
 netCreateConnections(& manLinkArray);
+
+/*Creat links between switch and hosts 
 
 /* Create links between nodes but not setting their end nodes */
 
@@ -85,6 +89,31 @@ for (physid = 0; physid < NUMHOSTS; physid++) {
       hostMain(&hstate);
    }  
 }
+
+/* Switch */
+   pid = fork();
+   
+   if (pid == -1) {
+      printf("Error:  the fork() failed\n");
+      return;
+   }
+   else if (pid == 0) { /* The child process -- a switch node */
+      switchInit(&sstate, physid);
+      
+      netSwitchOutLink(&linkArray, physid, &s);
+      for(j = 0; j < NUMHOSTS; j++){
+         sstate.linkout[j] = linkArray.link[s[j]];
+      }
+      
+      netSwitchInLink(&linkArray, physid, &s);
+      for(j = 0; j < NUMHOSTS; j++){
+         sstate.linkin[j] = linkArray.link[s[j]];
+      }
+      
+      netCloseHostOtherLinks(& linkArray, physid);
+      
+      switchMain(&sstate);
+   }
 
 /* Manager */
 
