@@ -6,16 +6,16 @@ typedef struct {
 	int physid;
 	packetBuffer sendPacketBuf;
 	packetBuffer rcvPacketBuf;	
-	struct switchNode * head;
-	struct switchNode * tail;
+	struct node * head;
+	struct node * tail;
 	LinkInfo linkin[NUMHOSTS];
 	LinkInfo linkout[NUMHOSTS];
 	//switchTable table;
 } switchState;
 
-typedef struct {
+typedef struct node{
 	packetBuffer packet;
-	struct switchNode * next;
+	struct node * next;
 } switchNode;
 
 /*
