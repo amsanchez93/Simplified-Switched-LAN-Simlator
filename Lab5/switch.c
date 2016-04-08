@@ -17,7 +17,7 @@
 #define PIPEREAD    0
 #define PIPEWRITE   1
 #define TENMILLISEC 10000
-#define DEBUG
+//#define DEBUG
 
 //initialization functions used by switchInit()
 void switchInitRcvPacketBuf(packetBuffer * packetbuff);
@@ -26,8 +26,8 @@ void switchInitState(switchState * sstate, int physid);
 void switchInitQueue(switchState * sstate);
 
 //functions for switch queue
-void switchQueueInsert(switchNode * head, switchNode * tail, packetBuffer packetbuff);
-packetBuffer switchQueueRemove(switchNode * head);
+void switchQueueInsert(switchState * sstate, packetBuffer packetbuff);
+packetBuffer switchQueueRemove(switchState * sstate);
 
 
 void switchMain(switchState * sstate)
@@ -36,15 +36,17 @@ void switchMain(switchState * sstate)
         int i,j, rcvSize = 0;
         for(i = 0; i < NUMHOSTS; i++){
             if(linkReceive(&(sstate->linkin[i]),&(sstate->rcvPacketBuf)) > 0){
-                switchQueueInsert(sstate->head, sstate->tail, sstate->rcvPacketBuf);
+                switchQueueInsert(sstate, sstate->rcvPacketBuf);
 #ifdef DEBUG
                 printf("\nreceived packet on link %d with source address %d\n", i, sstate->rcvPacketBuf.srcaddr);
 #endif
             }
         }
-        if(sstate->head != NULL){
-            sstate->sendPacketBuf = switchQueueRemove(sstate->head);
-            
+        if(sstate->tail != NULL){
+            sstate->sendPacketBuf = switchQueueRemove(sstate);
+#ifdef DEBUG
+	printf("inside if\n");
+#endif            
             for(j = 0; j < NUMHOSTS; j++){
                 if(j != sstate->sendPacketBuf.srcaddr){
                     linkSend(&(sstate->linkout[j]), &(sstate->sendPacketBuf));
@@ -58,27 +60,28 @@ void switchMain(switchState * sstate)
     }
 }
 
-void switchQueueInsert(switchNode * head, switchNode * tail, packetBuffer packet)
+void switchQueueInsert(switchState * sstate, packetBuffer packet)
 {
     switchNode * new;
     new = (switchNode*) malloc(sizeof(switchNode));
     new->packet = packet;
     new->next = NULL;
     // Insert into queue
-    if (head == NULL) { // Insert into empty queue
-        head = new;
-        tail = new;
+    if (sstate->head == NULL) { // Insert into empty queue
+        sstate->head = new;
+        sstate->tail = new;
     }
     else {
-        tail->next = new; // Insert at the tail
-        tail = new;         
+        sstate->tail->next = new; // Insert at the tail
+        sstate->tail = new;         
     }
 }
-packetBuffer switchQueueRemove(switchNode * head)
+packetBuffer switchQueueRemove(switchState * sstate)
 {
     packetBuffer temp;
-    temp = head->packet;
-    head = head->next;
+    temp = sstate->head->packet;
+    sstate->head = sstate->head->next;
+	return temp;
 }
 
 void switchInit(switchState * sstate, int physid)
