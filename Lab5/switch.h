@@ -6,18 +6,19 @@ typedef struct {
 	int physid;
 	packetBuffer sendPacketBuf;
 	packetBuffer rcvPacketBuf;	
-	//switchQueue * head;
-	//switchQueue * tail;
+	struct switchNode * head;
+	struct switchNode * tail;
 	LinkInfo linkin[NUMHOSTS];
 	LinkInfo linkout[NUMHOSTS];
 	//switchTable table;
 } switchState;
-/*
-typedef struct {
-	packetBuffer data;
-	switchQueue * next;
-} switchQueue;
 
+typedef struct {
+	packetBuffer packet;
+	struct switchNode * next;
+} switchNode;
+
+/*
 typedef struct {
 	int valid[TABLE_LENGTH];
 	int dstaddr[TABLE_LENGTH];

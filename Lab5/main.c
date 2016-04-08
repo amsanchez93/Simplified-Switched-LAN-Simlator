@@ -99,15 +99,18 @@ for (physid = 0; physid < NUMHOSTS; physid++) {
    }
    else if (pid == 0) { /* The child process -- a switch node */
       switchInit(&sstate, physid);
+      printf("\ninitialize switch with phys id: %d\n", physid);
       
       netSwitchOutLink(&linkArray, physid, &s);
       for(j = 0; j < NUMHOSTS; j++){
          sstate.linkout[j] = linkArray.link[s[j]];
+         printf("link out j = %d, to %d\n\n", j, sstate.linkout[j].linkID);
       }
       
       netSwitchInLink(&linkArray, physid, &s);
       for(j = 0; j < NUMHOSTS; j++){
          sstate.linkin[j] = linkArray.link[s[j]];
+         printf("link in j = %d, to %d\n\n", j, sstate.linkin[j].linkID);
       }
       
       netCloseHostOtherLinks(& linkArray, physid);
