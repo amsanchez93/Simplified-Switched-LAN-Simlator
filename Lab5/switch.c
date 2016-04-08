@@ -37,22 +37,13 @@ void switchMain(switchState * sstate)
         for(i = 0; i < NUMHOSTS; i++){
             if(linkReceive(&(sstate->linkin[i]),&(sstate->rcvPacketBuf)) > 0){
                 switchQueueInsert(sstate, sstate->rcvPacketBuf);
-#ifdef DEBUG
-                printf("\nreceived packet on link %d with source address %d\n", i, sstate->rcvPacketBuf.srcaddr);
-#endif
             }
         }
         if(sstate->tail != NULL){
             sstate->sendPacketBuf = switchQueueRemove(sstate);
-#ifdef DEBUG
-	printf("inside if\n");
-#endif            
             for(j = 0; j < NUMHOSTS; j++){
                 if(j != sstate->sendPacketBuf.srcaddr){
                     linkSend(&(sstate->linkout[j]), &(sstate->sendPacketBuf));
-#ifdef DEBUG
-                    printf("\nsent packet on link %d\n", j);
-#endif
                 }
             }
         }
@@ -90,6 +81,17 @@ void switchInit(switchState * sstate, int physid)
     switchInitRcvPacketBuf(&(sstate->rcvPacketBuf));
     switchInitSendPacketBuf(&(sstate->sendPacketBuf));
     switchInitQueue(sstate);
+    switchInitTable(sstate);
+}
+
+void switchInitTable(switchState * sstate)
+{
+    int i;
+    for(i = 0; i < TABLE_LENGTH; i++){
+        sstate->switchTable.valid[i] = 0;
+        sstate->switchTable.dstaddr[i] = 0;
+        sstate->switchTable.outlink[i] = 0;
+    }
 }
 
 void switchInitQueue(switchState * sstate)
