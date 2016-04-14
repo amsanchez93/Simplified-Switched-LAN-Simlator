@@ -338,7 +338,7 @@ if (length==0) {
    strcpy(replymsg, "Upload aborted: error in reading the file");
    return;
 }
-else if (length > PAYLOAD_LENGTH) {
+else if (length > PAYLOAD_LENGTH) { //if file is too big
       divisions = length/198 + 1;
       split_lengths = length/divisions;
       
