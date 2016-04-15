@@ -38,23 +38,34 @@ int switchTableUpdate(switchState * sstate, packetBuffer packet, int link);
 void switchMain(switchState * sstate)
 {
     while(1){
-        int i,j, sendAddr;
+        int i,j, sendIndex = 0, sendAddr = 0, size = 0;
         for(i = 0; i < NUMHOSTS; i++){
-            if(linkReceive(&(sstate->linkin[i]),&(sstate->rcvPacketBuf)) > 0){
-                switchTableUpdate(sstate, sstate->rcvPacketBuf, i);
+            size = linkReceive(&(sstate->linkin[i]),&(sstate->rcvPacketBuf));
+            if(size > 0){
+                sstate->rcvPacketBuf.payload[size] = '\0';
+                printf("received packet on incoming link %d\n",i);
+                printf("packet contents:"); puts(sstate->rcvPacketBuf.payload); printf("\n");
+                if(switchTableUpdate(sstate, sstate->rcvPacketBuf, i) == -1)
+                    printf("error in table update\n");
                 switchQueueInsert(sstate, sstate->rcvPacketBuf);
+                size = 0;
             }
         }
-        if(sstate->tail != NULL){
+        if(sstate->head != NULL){
             sstate->sendPacketBuf = switchQueueRemove(sstate);
-            if(sendAddr = switchTableSearch(sstate->table, sstate->sendPacketBuf.dstaddr) == -1){
+	    sendIndex = switchTableSearch(sstate->table, sstate->sendPacketBuf.dstaddr);
+            if(sendIndex == -1){
+		printf("Dest Addr not found in table\n");
                 for(j = 0; j < NUMHOSTS; j++){
                     if(j != sstate->sendPacketBuf.srcaddr){
+			printf("Sending packet on outgoing link %d\n",j);
                         linkSend(&(sstate->linkout[j]), &(sstate->sendPacketBuf));
                     }
                 }
             }
             else{
+		sendAddr = sstate->table.outlink[sendIndex];
+		printf("Dest Addr found, sending on outgoing link %d", sendAddr);
                 linkSend(&(sstate->linkout[sendAddr]), &(sstate->sendPacketBuf));
             }
         }
@@ -71,29 +82,38 @@ int switchTableSearch(switchTable table, int dstaddr)
     int i;
     for(i = 0; i < TABLE_LENGTH; i++){
         if(table.valid[i] == 1){
-            if(table.dstaddr[i] == dstaddr) return table.outlink[i]; 
+            if(table.dstaddr[i] == dstaddr){
+                printf("index found at %d\n", i);
+                return i;    //return index in table
+            }
         }
     }
+    printf("address in table not found\n");
     return -1; //dest. addr not in table
 }
 
 int switchTableUpdate(switchState * sstate, packetBuffer packet, int link)
 {
-    int i,j, addr;
-    for(i = 0; i < TABLE_LENGTH; i++){
-        if(sstate->table.valid[i] == 1){
-            if(sstate->table.dstaddr[i] == packet.dstaddr){
-                sstate->table.outlink[i] = link;
-                return 1;
-            }
-        }
+    int index;
+    
+    index = switchTableSearch(sstate->table, packet.srcaddr);
+    
+    if(index != -1){ //found in table
+        printf("updating table at index %d with dest addr %d to %d\n", index, sstate->table.dstaddr[index], packet.srcaddr);
+        sstate->table.dstaddr[index] = packet.srcaddr;
+        return 0;
     }
-    for(j = 0; j < TABLE_LENGTH; j++){
-        if(sstate->table.valid[j] == 0){
-            sstate->table.dstaddr[j] = packet.dstaddr;
-            sstate->table.outlink[j] = link;
-            sstate->table.valid[j] = 1;
-            return 1;
+    else{
+        printf("index not found in table\n");
+        int i;
+        for(i = 0; i < TABLE_LENGTH; i++){
+            if(sstate->table.valid[i] == 0){
+                printf("inserting into table at index %d with dest addr %d and link %d\n", i, packet.srcaddr, link);
+                sstate->table.outlink[i] = link;
+                sstate->table.dstaddr[i] = packet.srcaddr;
+                sstate->table.valid[i] = 1;
+                return 0;
+            }
         }
     }
     return -1; //error
@@ -107,10 +127,12 @@ void switchQueueInsert(switchState * sstate, packetBuffer packet)
     new->next = NULL;
     // Insert into queue
     if (sstate->head == NULL) { // Insert into empty queue
+	printf("inserting into empty queue\n");
         sstate->head = new;
         sstate->tail = new;
     }
     else {
+	printf("inserting into queue\n");
         sstate->tail->next = new; // Insert at the tail
         sstate->tail = new;         
     }
@@ -119,6 +141,7 @@ packetBuffer switchQueueRemove(switchState * sstate)
 {
     packetBuffer temp;
     temp = sstate->head->packet;
+	printf("removing packet from queue\n");
     sstate->head = sstate->head->next;
 	return temp;
 }

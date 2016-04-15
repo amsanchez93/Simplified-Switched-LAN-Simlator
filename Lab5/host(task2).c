@@ -307,7 +307,9 @@ FILE * fp;
 char path[MAXBUFFER];  /* Path to the file */
 char tempbuff[MAXBUFFER]; /* A temporary buffer */
 int length;
-int i;
+int i, j;
+int divisions = 0;
+int split_lengths = 0;
 
 /* 
  * Upload the file into tempbuff 
@@ -336,8 +338,10 @@ if (length==0) {
    strcpy(replymsg, "Upload aborted: error in reading the file");
    return;
 }
-else if (length > PAYLOAD_LENGTH) {
-   strcpy(replymsg, "Upload aborted: file is too big");
+else if (length > PAYLOAD_LENGTH) { //if file is too big
+      divisions = length/198 + 1;
+      split_lengths = length/divisions;
+      
    return;
 }
 
@@ -348,8 +352,10 @@ tempbuff[length] = '\0';
 hstate->sendPacketBuff.valid=1;
 hstate->sendPacketBuff.length=length;
 
-for (i=0; i<length; i++) { /* Store tempbuff in payload of packet buffer */
-   hstate->sendPacketBuff.payload[i] = tempbuff[i];
+for (j=0; j<divisions; j++){ /* Store tempbuff in payload of packet buffer */
+   for(i=0; i<split_lengths; i++){  
+      hstate->sendPacketBuff.payload[i] = tempbuff[i];
+   }
 }
 
 /* Message to the manager */
@@ -488,3 +494,5 @@ hstate->nbraddr = EMPTY_ADDR;
 hstate->rcvPacketBuff.valid = 0;
 hstate->rcvPacketBuff.new = 0;
 }
+
+
