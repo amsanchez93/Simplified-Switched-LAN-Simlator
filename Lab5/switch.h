@@ -1,6 +1,7 @@
 /* switch.h */
 
 #define TABLE_LENGTH 100
+#define MAXHOSTS 100
 
 typedef struct {
 	int valid[TABLE_LENGTH];
@@ -10,13 +11,14 @@ typedef struct {
 
 typedef struct {
 	int physid;
-	int netaddr;
+	int numInLinks;
+	int numOutLinks;
 	packetBuffer sendPacketBuf;
 	packetBuffer rcvPacketBuf;	
 	struct node * head;
 	struct node * tail;
-	LinkInfo linkin[NUMHOSTS];
-	LinkInfo linkout[NUMHOSTS];
+	LinkInfo linkin[MAXHOSTS];
+	LinkInfo linkout[MAXHOSTS];
 	switchTable table;
 } switchState;
 
@@ -29,5 +31,5 @@ typedef struct node{
 
 void switchMain(switchState * sstate); //main loop for switch
 
-void switchInit(switchState * sstate, int physid);
+void switchInit(switchState * sstate, int physid, int numlinks);
 

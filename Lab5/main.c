@@ -20,9 +20,34 @@
 #define MAXBUFFER 1000
 #define PIPEWRITE 1 
 #define PIPEREAD  0
+#define TENMILLISEC 10000
+#define MAX 100
 
-void main()
+
+void main(int argc, char *argv[])
 {
+int numhosts;
+int numswitches;
+int numlinks;
+int a, b, n, c;
+int src[MAX], dst[MAX];
+
+FILE *fp = fopen(argv[1],"r");
+
+   fscanf(fp, "%d %d %d", &numhosts, &numswitches, &numlinks);
+
+      printf("hosts = %d\n",numhosts);
+      printf("switches = %d\n",numswitches);
+      printf("links = %d\n",numlinks);
+
+   while(!feof(fp)){
+      fscanf(fp, "%d %d", &a, &b);
+      printf("src: %d\ndst: %d\n",a, b);
+      src[c] = a;
+      dst[c] = b;
+      c++;
+   }
+
 hostState hstate;             /* The host's state */
 switchState sstate;           /* The switch's state */
 linkArrayType linkArray;
@@ -30,31 +55,29 @@ manLinkArrayType manLinkArray;
 
 pid_t pid;  /* Process id */
 int physid; /* Physical ID of host */
-int i, j;
-int k, s[NUMHOSTS];
+int i, j, k, m, inlinks[numhosts], outlinks[numhosts];
 
 /* 
  * Create nonblocking (pipes) between manager and hosts 
  * assuming that hosts have physical IDs 0, 1, ... 
  */
-manLinkArray.numlinks = NUMHOSTS;
-netCreateConnections(& manLinkArray);
-
-/*Creat links between switch and hosts 
+manLinkArray.numlinks = numhosts;
+netCreateConnections(&manLinkArray);
 
 /* Create links between nodes but not setting their end nodes */
 
-linkArray.numlinks = NUMLINKS;
-netCreateLinks(& linkArray);
+linkArray.numlinks = 2*numlinks;
+
+netCreateLinks(&linkArray);
 
 /* Set the end nodes of the links */
 
-netSetNetworkTopology(& linkArray);
+netSetNetworkTopology(&linkArray,src,dst);
 
+usleep(TENMILLISEC);
 /* Create nodes and spawn their own processes, one process per node */ 
 
-for (physid = 0; physid < NUMHOSTS; physid++) {
-
+for (physid = 0; physid < numhosts+numswitches; physid++) {
    pid = fork();
 
    if (pid == -1) {
@@ -62,61 +85,57 @@ for (physid = 0; physid < NUMHOSTS; physid++) {
       return;
    }
    else if (pid == 0) { /* The child process -- a host node */
+      if(physid < numhosts){
+         hostInit(&hstate, physid);              /* Initialize host's state */
+   
+         /* Initialize the connection to the manager */ 
+         hstate.manLink = manLinkArray.link[physid];
+   
+         /* 
+          * Close all connections not connect to the host
+          * Also close the manager's side of connections to host
+          */
+         netCloseConnections(& manLinkArray, physid);
+   
+         /* Initialize the host's incident communication links */
+   
+         k = netHostOutLink(&linkArray, physid); /* Host's outgoing link */
+         hstate.linkout = linkArray.link[k];
+   
+         k = netHostInLink(&linkArray, physid); /* Host's incoming link */
+         hstate.linkin = linkArray.link[k];
+   
+         /* Close all other links -- not connected to the host */
+         netCloseHostOtherLinks(& linkArray, physid);
+   
+         /* Go to the main loop of the host node */
+         hostMain(&hstate);
+      }
+      else{
+         //printf("creating switch with physical ID = %d\n", physid);
+         switchInit(&sstate, physid, numlinks);
+         switchInitLinks(&sstate, &linkArray);
+/*
+         netSwitchOutLink(&linkArray, physid, &outlinks);
+         netSwitchInLink(&linkArray, physid, &inlinks);
 
-      hostInit(&hstate, physid);              /* Initialize host's state */
-
-      /* Initialize the connection to the manager */ 
-      hstate.manLink = manLinkArray.link[physid];
-
-      /* 
-       * Close all connections not connect to the host
-       * Also close the manager's side of connections to host
-       */
-      netCloseConnections(& manLinkArray, physid);
-
-      /* Initialize the host's incident communication links */
-
-      k = netHostOutLink(&linkArray, physid); /* Host's outgoing link */
-      hstate.linkout = linkArray.link[k];
-
-      k = netHostInLink(&linkArray, physid); /* Host's incoming link */
-      hstate.linkin = linkArray.link[k];
-
-      /* Close all other links -- not connected to the host */
-      netCloseHostOtherLinks(& linkArray, physid);
-
-      /* Go to the main loop of the host node */
-      hostMain(&hstate);
+         //printf("debug1\n numlinks: %d\n", numlinks);
+         for(j = 0; j < numlinks; j++){
+            //printf("DEBUG: PHYSID = %d\t j = %d\n", physid, j);
+            sstate.linkout[j] = linkArray.link[outlinks[j]];
+            sstate.linkin[j] = linkArray.link[inlinks[j]];
+            printf("link out %d, to %d\n\n", j, sstate.linkout[j].linkID);
+            printf("link in %d, to %d\n\n", m, sstate.linkin[m].linkID);
+         }
+*/        
+         netCloseHostOtherLinks(&linkArray, physid);
+         
+         netCloseAllManConnections(&manLinkArray);
+         
+         switchMain(&sstate);
+      }
    }  
 }
-
-/* Switch */
-   pid = fork();
-   
-   if (pid == -1) {
-      printf("Error:  the fork() failed\n");
-      return;
-   }
-   else if (pid == 0) { /* The child process -- a switch node */
-      switchInit(&sstate, physid);
-      printf("\ninitialize switch with phys id: %d\n", physid);
-      
-      netSwitchOutLink(&linkArray, physid, &s);
-      for(j = 0; j < NUMHOSTS; j++){
-         sstate.linkout[j] = linkArray.link[s[j]];
-//         printf("link out j = %d, to %d\n\n", j, sstate.linkout[j].linkID);
-      }
-      
-      netSwitchInLink(&linkArray, physid, &s);
-      for(j = 0; j < NUMHOSTS; j++){
-         sstate.linkin[j] = linkArray.link[s[j]];
-//         printf("link in j = %d, to %d\n\n", j, sstate.linkin[j].linkID);
-      }
-      
-      netCloseHostOtherLinks(& linkArray, physid);
-      
-      switchMain(&sstate);
-   }
 
 /* Manager */
 
@@ -148,6 +167,8 @@ manMain(& manLinkArray);
  * The following system call will kill all the children processes, so
  * that saves us some manual labor
  */
+
+fclose(fp);
 kill(0, SIGKILL); /* Kill all processes */
 }
 

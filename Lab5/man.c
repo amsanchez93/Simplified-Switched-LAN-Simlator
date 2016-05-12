@@ -193,7 +193,9 @@ while(1) {
    else if (cmd == 't') return cmd;
    else if (cmd == 'q') return cmd;
    else if (cmd == 'h') return cmd;
-   else if (cmd == 'c') return cmd;
+   else if (cmd == 'c'){
+      return cmd;
+   }
    else printf("Invalid command, you entered %c\n", cmd);
    printf("\n");
 }
@@ -456,7 +458,6 @@ currhost = 0;      /* Manager is initially connected to host 0 */
 while(1) {
    /* Get a command from the user */
    cmd = manGetUserCommand(currhost);
-
    /* Execute the command */
    if (cmd == 'q') return;
    else if (cmd == 'd') {
@@ -493,7 +494,7 @@ while(1) {
    else if (cmd == 'c') 
       currhost = manChangeHost(manLinkArray->numlinks);
 
-   else printf("***Invalid command, you entered %c\n", cmd);
+   else printf("***Invalid comma nd, you entered %c\n", cmd);
 }
 printf("\n");
   
